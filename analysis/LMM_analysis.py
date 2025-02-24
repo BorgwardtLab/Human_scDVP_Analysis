@@ -20,6 +20,7 @@ from sklearn.preprocessing import StandardScaler
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 
 from utils import *
+
 warnings.simplefilter("ignore", ConvergenceWarning)
 
 
@@ -27,9 +28,24 @@ def main(args):
 
     # Define groups
     group_dict = {
-        1:['NML4', 'NML5', 'NML6', 'NML7', 'NML10', 'NML17', 'NML20', 'NML31', 'NML9', 'NML11', 'NML15', 'NML16', 'CHTL3', 'CHTL73'], # Controls
-        2:['CHTL36', 'CHTL38', 'CHTL59', 'CHTL34'], # Cases
-        3:['m3B', 'm5C', 'm4A'], # mouse data
+        1: [
+            "NML4",
+            "NML5",
+            "NML6",
+            "NML7",
+            "NML10",
+            "NML17",
+            "NML20",
+            "NML31",
+            "NML9",
+            "NML11",
+            "NML15",
+            "NML16",
+            "CHTL3",
+            "CHTL73",
+        ],  # Controls
+        2: ["CHTL36", "CHTL38", "CHTL59", "CHTL34"],  # Cases
+        3: ["m3B", "m5C", "m4A"],  # mouse data
     }
 
     intensity = pd.read_csv(
@@ -42,7 +58,9 @@ def main(args):
         + [
             col
             for col in intensity.columns
-            if any(patient + "_" in col for patient in group_dict[int(args.patient_group)]) 
+            if any(
+                patient + "_" in col for patient in group_dict[int(args.patient_group)]
+            )
         ]
     ]
 
@@ -62,10 +80,14 @@ def main(args):
     intensity.iloc[:, 1:] = normalize_protein_intensities(intensity.iloc[:, 1:])
 
     # Remove outliers using Tukey's fences
-    intensity.iloc[:, 1:] = remove_intensity_outliers(intensity.iloc[:, 1:], groups=intensity.iloc[:, 1:].columns.str.split("_").str[0])
+    intensity.iloc[:, 1:] = remove_intensity_outliers(
+        intensity.iloc[:, 1:],
+        groups=intensity.iloc[:, 1:].columns.str.split("_").str[0],
+    )
 
     # Normalize the rows using RobustScaler
     from sklearn.preprocessing import RobustScaler
+
     intensity.iloc[:, 1:] = (
         RobustScaler().fit_transform(intensity.iloc[:, 1:].values.T).T
     )
@@ -103,7 +125,10 @@ def main(args):
 
         # Fit mixed linear model
         model = smf.mixedlm(
-            "y ~ score", data=data, groups=data["patient"], missing="drop",
+            "y ~ score",
+            data=data,
+            groups=data["patient"],
+            missing="drop",
         )
         fit_results = model.fit(method=["powell", "lbfgs"])
         models[protein] = fit_results
@@ -130,7 +155,9 @@ def main(args):
 
     # Get protein SYMBOL names
     results_df.index = switch_uniprot_iD_to_Gene_Name(
-        results_df.reset_index(), protein_col="index", species=args.species,
+        results_df.reset_index(),
+        protein_col="index",
+        species=args.species,
     )["index"]
 
     print(results_df.head())
@@ -156,7 +183,9 @@ def main(args):
         if args.species == "mouse":
             ortholog_map = mouse_to_human(results_df.index)
             renamed_results_df = results_df.loc[ortholog_map.keys()]
-            renamed_results_df.index = [ortholog_map[x] for x in renamed_results_df.index]
+            renamed_results_df.index = [
+                ortholog_map[x] for x in renamed_results_df.index
+            ]
             unmapped_proteins = set(results_df.index) - set(ortholog_map.keys())
 
             pd.Series(list(unmapped_proteins)).to_csv(
@@ -201,10 +230,14 @@ def main(args):
             & (results_df["coefficient"] < -coeff_threshold)
         ]
 
-        for idx, row in sig_pos_points.sort_values("q_value").head(args.annotate_top).iterrows():
+        for idx, row in (
+            sig_pos_points.sort_values("q_value").head(args.annotate_top).iterrows()
+        ):
             plt.annotate(idx, (row["coefficient"], -np.log10(row["q_value"])))
 
-        for idx, row in sig_neg_points.sort_values("q_value").head(args.annotate_top).iterrows():
+        for idx, row in (
+            sig_neg_points.sort_values("q_value").head(args.annotate_top).iterrows()
+        ):
             plt.annotate(idx, (row["coefficient"], -np.log10(row["q_value"])))
 
         # Add significant scatter

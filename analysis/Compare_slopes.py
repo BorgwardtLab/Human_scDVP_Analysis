@@ -38,7 +38,8 @@ def main(args):
 
     # Keep only proteins that are significant in the source)
     control_model_results = control_model_results[
-        (control_model_results["q_value"] < args.pval_cutoff) & (np.abs(control_model_results["coefficient"]) > args.fold_change_cutoff)
+        (control_model_results["q_value"] < args.pval_cutoff)
+        & (np.abs(control_model_results["coefficient"]) > args.fold_change_cutoff)
     ]
 
     # How many proteins are in both models?
@@ -74,16 +75,12 @@ def main(args):
         abs_larger = np.abs(slope_comparison_results["coefficient_control"]) > np.abs(
             slope_comparison_results["coefficient_treated"]
         )
-        slope_comparison_results.loc[
-            abs_larger, "diff"
-        ] = np.abs(slope_comparison_results.loc[
-            abs_larger, "diff"
-        ])
-        slope_comparison_results.loc[
-            ~abs_larger, "diff"
-        ] = -np.abs(slope_comparison_results.loc[
-            ~abs_larger, "diff"
-        ])
+        slope_comparison_results.loc[abs_larger, "diff"] = np.abs(
+            slope_comparison_results.loc[abs_larger, "diff"]
+        )
+        slope_comparison_results.loc[~abs_larger, "diff"] = -np.abs(
+            slope_comparison_results.loc[~abs_larger, "diff"]
+        )
 
     # Calculate the standard error of the difference
     slope_comparison_results["se_diff"] = np.sqrt(
